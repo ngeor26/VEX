@@ -1,159 +1,310 @@
 #include "main.h"
 #include "lemlib/api.hpp"
+#include "lemlib/asset.hpp"
+#include "lemlib/chassis/trackingWheel.hpp"
 #include "pros/abstract_motor.hpp"
+#include "pros/adi.h"
+#include "pros/adi.hpp"
 #include "pros/misc.h"
+#include "pros/motors.h"
+#include "pros/rotation.hpp"
 #include "pros/rtos.h"
+#include "pros/rtos.hpp"
+#include "pros/vision.hpp"
+#include <cmath>
+#include <iostream>
+#include <ostream>
+#include <string>
+
+ASSET(chunky_txt)
+// ASSET(straight_txt)
 
 bool isFlipping = false;
 
-// pros::MotorGroup left_motor_group({-1, -3, -13}, pros::v5::MotorGears::green, pros::v5::MotorUnits::rotations);
+bool isRaised = false;
+bool mogoOn = false;
+bool doinkerOn = false;
 
-// pros::MotorGroup right_motor_group({2, 4, 5}, pros::v5::MotorGears::green, pros::v5::MotorUnits::rotations);
 
-// lemlib::Drivetrain drivetrain(&left_motor_group, // left motor group
-//                               &right_motor_group, // right motor group
-//                         12.75, // 10 inch track width
-//                               lemlib::Omniwheel::NEW_325, // using new 4" omnis
-//                               400, // drivetrain rpm is 360
-//                               2 
-// );
+bool canRaise = true;
+bool canMogo = true;
+bool canDoinker = true;
+
+pros::MotorGroup left_motor_group({20, -18, -17}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::rotations);
+
+pros::MotorGroup right_motor_group({-19, 16, 8}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::rotations);
+
+lemlib::Drivetrain drivetrain(&left_motor_group, // left motor group
+                              &right_motor_group, // right motor group
+                              10.32, // 10 inch track width
+                              lemlib::Omniwheel::NEW_275, // using new 4" omnis
+                              450, // drivetrain rpm is 360
+                              2 
+);
 
 pros::Motor intake(6, pros::v5::MotorGears::blue);
 
 pros::Motor flipper(7, pros::v5::MotorGears::red);
 
-// pros::Imu imu(19);
+pros::adi::DigitalOut mogo ('C');
 
-// lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel 1, set to null
-//                             nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
-//                             nullptr, // horizontal tracking wheel 1
-//                             nullptr, // horizontal tracking wheel 2, set to nullptr as we don't have a second one
-//                             &imu // inertial sensor
-// );
+pros::adi::DigitalOut doinker ('E');
 
-// // lateral PID controller
-// lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
-//                                               0, // integral gain (kI)
-//                                               3, // derivative gain (kD)
-//                                               3, // anti windup
-//                                               1, // small error range, in inches
-//                                               100, // small error range timeout, in milliseconds
-//                                               3, // large error range, in inches
-//                                               500, // large error range timeout, in milliseconds
-//                                               20 // maximum acceleration (slew)
-// );
+pros::adi::DigitalOut arm ('D');
 
-// // angular PID controller
-// lemlib::ControllerSettings angular_controller(2.2, // proportional gain (kP)
-//                                               0, // integral gain (kI)
-//                                               14, // derivative gain (kD)
-//                                               0, // anti windup
-//                                               0, // small error range, in inches
-//                                               0, // small error range timeout, in milliseconds
-//                                               0, // large error range, in inches
-//                                               0, // large error range timeout, in milliseconds
-//                                               0 // maximum acceleration (slew)
-// );
+pros::adi::Button limit_switch('F');
+
+pros::adi::Ultrasonic ultrasonic ('G', 'H');
+
+pros::Vision vision(15);
+
+pros::Imu imu(1);
+
+pros::Rotation rotation(-11);
+
+lemlib::TrackingWheel horizontal_tracking_wheel(&rotation, lemlib::Omniwheel::NEW_275, 1.4);
+
+lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel 1, set to null
+                            nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
+                            &horizontal_tracking_wheel, // horizontal tracking wheel 1
+                            nullptr, // horizontal tracking wheel 2, set to nullptr as we don't have a second one
+                            &imu // inertial sensor
+);
+
+// lateral PID controller
+lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
+                                              0, // integral gain (kI)
+                                              3, // derivative gain (kD)
+                                              3, // anti windup
+                                              1, // small error range, in inches
+                                              100, // small error range timeout, in milliseconds
+                                              3, // large error range, in inches
+                                              500, // large error range timeout, in milliseconds
+                                              20 // maximum acceleration (slew)
+);
+
+lemlib::ControllerSettings angular_controller(3, // proportional gain (kP)
+                                              0, // integral gain (kI)
+                                              20, // derivative gain (kD)
+                                              3, // anti windup
+                                              1, // small error range, in inches
+                                              100, // small error range timeout, in milliseconds
+                                              3, // large error range, in inches
+                                              500, // large error range timeout, in milliseconds
+                                              0 // maximum acceleration (slew)
+);
 
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
-// // input curve for throttle input during driver control
-// lemlib::ExpoDriveCurve throttle_curve(3, // joystick deadband out of 127
-//                                      10, // minimum output where drivetrain will move out of 127
-//                                      1.019 // expo curve gain
-// );
+// create the chassis
+lemlib::Chassis chassis(drivetrain,
+                        lateral_controller,
+                        angular_controller,
+                        sensors
+);
 
-// // input curve for steer input during driver control
-// lemlib::ExpoDriveCurve steer_curve(3, // joystick deadband out of 127
-//                                   10, // minimum output where drivetrain will move out of 127
-//                                   1.019 // expo curve gain
-// );
+int autonState = 0;
+bool buttonUnpressed = true;
 
-// // create the chassis
-// lemlib::Chassis chassis(drivetrain,
-//                         lateral_controller,
-//                         angular_controller,
-//                         sensors,
-//                         &throttle_curve, 
-//                         &steer_curve
-// );
+int numRings = 0;
+bool hasSecond = false;
 
-// void initialize() {
-//     // pros::lcd::initialize(); // initialize brain screen
-//     chassis.calibrate(); // calibrate sensors
-//     // print position to brain screen
-//     pros::Task screen_task([&]() {
-//         while (true) {
-//             // print robot location to the brain screen
-//             pros::lcd::print(0, "X: %f", chassis.getPose().x); // x
-//             pros::lcd::print(1, "Y: %f", chassis.getPose().y); // y
-//             pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
-//             // delay to save resources
-//             pros::delay(20);
-//         }
-//     });
-// }
+std::string stack[2] = {"", ""};
+
+void initialize() {
+    pros::lcd::initialize();
+    pros::lcd::print(0, "Auton: %d", autonState);
+    chassis.calibrate();
+    flipper.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    pros::Task auton_switch([&](){
+        while(true)
+        {
+            if(limit_switch.get_value() == 1 && buttonUnpressed)
+            {
+                autonState++;
+                if(autonState == 6) autonState = 0;
+                pros::lcd::print(0, "Auton: %d", autonState);
+                buttonUnpressed = false;
+            }
+            if(limit_switch.get_value() != 1) buttonUnpressed = true;
+
+            // pros::delay(7);
+            controller.print(0, 0, "Angle: %.1f", imu.get_heading());
+            pros::delay(50);
+        }
+    });
+}
 
 // void disabled() {}
 
-// void competition_initialize() {}
-
-// void autonomous() {
-//     // set position to x:0, y:0, heading:0
-//     chassis.setPose(0, 0, 0);
-//     // turn to face heading 90 with a very long timeout
-//     chassis.turnToHeading(120, 100000);
-// }
+void autonomous() {
+    chassis.setPose(0,0,0);
+    chassis.moveToPose(24, 48, 90, 10000, {.earlyExitRange=10});
+    chassis.moveToPose(0, 48, 90, 10000, {.forwards=false, .earlyExitRange=10});
+    chassis.moveToPose(0, 96, 0, 10000, {.forwards=false});
+}
 
 void doFlip(){
     isFlipping = true;
-    flipper.move_absolute(-1060, 200);
+    if(((autonState == 0 || autonState == 1 || autonState == 2) && stack[0] == "Red") || ((autonState == 3 || autonState == 4 || autonState == 5) && stack[0] == "Blue")){
+        flipper.move_absolute(-700, 150);
+    } else {
+        flipper.move_absolute(-1060, 200);
+    }
     pros::delay(500);
-    flipper.move_absolute(0, 30);
+    flipper.move_absolute(0, 55);
     pros::delay(1000);
     isFlipping = false;
 }
 
+void toggleArm(){
+    canRaise = false;
+    arm.set_value(!isRaised);
+    isRaised = !isRaised;
+    pros::delay(500);
+    canRaise = true;
+}
+
+void raiseMacro(){
+    canRaise = false;
+    if(!isRaised){
+        arm.set_value(!isRaised);
+        isRaised = !isRaised;
+    }
+    isFlipping = true;
+    flipper.move_absolute(-1700, 200);
+    pros::delay(1000);
+    isFlipping = false;
+    canRaise = true;
+}
+
+void toggleMogo(){
+    canMogo = false;
+    mogo.set_value(!mogoOn);
+    mogoOn = !mogoOn;
+    if(!mogoOn){
+        controller.print(0, 0, "%s", "Mogo on ");
+    } else {
+        controller.print(0, 0, "%s", "Mogo off");
+    }
+
+    pros::delay(250);
+    canMogo = true;
+}
+
+void toggleDoinker(){
+    canDoinker = false;
+    doinker.set_value(!doinkerOn);
+    doinkerOn = !doinkerOn;
+    pros::delay(500);
+    canDoinker = true;
+}
+
+void shaky(){
+    isFlipping = true;
+    flipper.move_velocity(-35);
+    pros::delay(250);
+    flipper.move_absolute(0, 55);
+    pros::delay(250);
+    isFlipping = false;
+}
+
+void update_stack(){
+    while(true){
+        pros::vision_object_s_t object_arr[3];
+
+        int y1 = 0;
+        int y2 = 0;
+        std::string color1 = "";
+        std::string color2 = "";
+
+        vision.read_by_size(0, 3, object_arr);
+
+        for(int i = 0; i < 3; i++){
+            if(object_arr[i].height > 150 && (object_arr[i].signature == 1 || object_arr[i].signature == 2)){
+                if(y1 != 0){
+                    y2 = object_arr[i].y_middle_coord;
+                    color2 = (object_arr[i].signature == 1) ? "Red" : "Blue";
+                } else {
+                    y1 = object_arr[i].y_middle_coord;
+                    color1 = (object_arr[i].signature == 1) ? "Red" : "Blue";
+                }
+            }
+            if(y2 < y1){
+                stack[1] = color2;
+                stack[0] = color1;
+            } else {
+                stack[1] = color1;
+                stack[0] = color2;
+            }
+        }
+
+        std::cout << "Bottom: " +  stack[0] << " Top: " + stack[1] << std::endl;
+
+        pros::delay(200);
+    }
+}
+
 void opcontrol() {
     // loop forever 
-    pros::lcd::initialize(); // initialize brain screen
+    pros::Task vision_task(update_stack);
     while (true) {
         // get left y and right x positions
         int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-
-        if(isFlipping){
-            pros::lcd::print(0, "%s", "True"); // x
-        } else {
-            pros::lcd::print(0, "%s", "False"); // x
-        }
-
-
-        // move the robot
-        // chassis.arcade(leftY, rightX*.7, false, 0.95);
-        // chassis.curvature(leftY, rightX);
-
-        if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2) && flipper.get_position() > -50){
-            intake.move(-127);
-        } else if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)){
-            intake.move(80);
+        
+        if(leftY < 0){
+            chassis.arcade(leftY*.8, rightX * .7);
+        } else if (leftY > 0){
+            chassis.arcade(leftY, rightX * .7);
         }
         else {
-            intake.move(0);
+            chassis.arcade(leftY, rightX);
+        }
+
+        hasSecond = ultrasonic.get_value() > 50;
+
+        if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && flipper.get_position() > -50 && (!(stack[0] != "" && stack[1] != "") || controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y))){
+            intake.move_velocity(-600);
+        } else if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
+            intake.move_velocity(400);
+        }
+        else {
+            intake.move_velocity(0);
         }
 
         if(!isFlipping){
-            if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)){
-                flipper.move(-30);
-            } else if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)){
-                flipper.move(30);
+            if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT)){
+                flipper.move(-127);
+            } else if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)){
+                flipper.move(50);
             } else {
                 flipper.brake();
             }
         }
 
+        if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_B) && canRaise){
+            pros::Task raise_task(toggleArm);
+        }
+
+        if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_A) && canRaise){
+            pros::Task raise_macro(raiseMacro);
+        }
+
+        if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && canMogo){
+            pros::Task mogo_task(toggleMogo);
+        }
+
+        if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_X) && canDoinker){
+            pros::Task doinker_task(toggleDoinker);
+        }
+
         if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !isFlipping){
             pros::Task flip_task(doFlip);
+        }
+
+        if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) && !isFlipping){
+            pros::Task shake_task(shaky);
         }
 
         // delay to save resources
