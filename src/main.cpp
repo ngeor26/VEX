@@ -201,17 +201,17 @@ void initialize() {
 
 void autonomous() {
     chassis.setPose(-55.082,-31.516,90);
-    chassis.moveToPose(-22.985, -48.941, 150, 5000, {.lead=0.2, .maxSpeed=90    , .minSpeed=80,  .earlyExitRange=100});
-    chassis.moveToPose(-9.883, -47.237, 90, 5000, {.lead=0.2, .maxSpeed=90  , .minSpeed=80,  .earlyExitRange=100});
-    chassis.moveToPose(-23.771, -47.106, 90, 5000, {.forwards=false, .lead=0.2, .maxSpeed=90 , .minSpeed=80,  .earlyExitRange=100});
-    chassis.moveToPose(-23.64, -32.826, 180, 5000, {.forwards=false, .lead=0.2, .maxSpeed=90 , .minSpeed=80,  .earlyExitRange=100});
-    chassis.moveToPose(-51.938, 5.036, 320, 5000, {.lead=0.2, .maxSpeed=90  , .minSpeed=80,  .earlyExitRange=100});
-    chassis.moveToPose(-58.882, -0.073, 180, 5000, {.lead=0.2, .maxSpeed=90 , .minSpeed=80,  .earlyExitRange=100});
-    chassis.moveToPose(-63.205, -0.073, 90, 5000, {.lead=0.2, .maxSpeed=90  , .minSpeed=80});
-    chassis.moveToPose(-23.247, 47.353, 70, 5000, {.lead=0.2, .maxSpeed=90  , .minSpeed=80,  .earlyExitRange=100});
-    chassis.moveToPose(-7.001, 50.759, 90, 5000, {.lead=0.2, .maxSpeed=90   , .minSpeed=80,  .earlyExitRange=100});
-    chassis.moveToPose(-23.771, 32.941, 0, 5000, {.lead=0.2, .maxSpeed=90   , .minSpeed=80,  .earlyExitRange=100});
-    chassis.moveToPose(-17.22, 14.6, 320, 5000, {.lead=0.2, .maxSpeed=90    , .minSpeed=80,  .earlyExitRange=100});
+    chassis.moveToPose(-22.985, -48.941, 150, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-9.883, -47.237, 90, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-23.771, -47.106, 90, 3000, {.forwards=false, .lead=0.2, .maxSpeed=90 , .minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-23.64, -32.826, 180, 3000, {.forwards=false, .lead=0.2, .maxSpeed=90 , .minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-51.938, 5.036, 320, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-58.882, -0.073, 180, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-63.205, -0.073, 90, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80});
+    chassis.moveToPose(-23.247, 47.353, 70, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-7.001, 50.759, 90, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-23.771, 32.941, 0, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-17.22, 14.6, 320, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
 }
 
 void update_stack(){
