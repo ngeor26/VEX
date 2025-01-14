@@ -16,9 +16,6 @@
 #include <ostream>
 #include <string>
 
-ASSET(chunky_txt)
-// ASSET(straight_txt)
-
 bool isFlipping = false;
 
 bool isRaised = false;
@@ -62,7 +59,7 @@ pros::Imu imu(1);
 
 pros::Rotation rotation(-11);
 
-lemlib::TrackingWheel horizontal_tracking_wheel(&rotation, lemlib::Omniwheel::NEW_275, 1.4);
+lemlib::TrackingWheel horizontal_tracking_wheel(&rotation, lemlib::Omniwheel::NEW_2, -0.875);
 
 lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel 1, set to null
                             nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
@@ -74,10 +71,10 @@ lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel 1, set to null
 // lateral PID controller
 lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              3, // derivative gain (kD)
+                                              15, // derivative gain (kD)
                                               3, // anti windup
                                               1, // small error range, in inches
-                                              100, // small error range timeout, in milliseconds
+                                              30, // small error range timeout, in milliseconds
                                               3, // large error range, in inches
                                               500, // large error range timeout, in milliseconds
                                               20 // maximum acceleration (slew)
@@ -88,7 +85,7 @@ lemlib::ControllerSettings angular_controller(3, // proportional gain (kP)
                                               20, // derivative gain (kD)
                                               3, // anti windup
                                               1, // small error range, in inches
-                                              100, // small error range timeout, in milliseconds
+                                              30, // small error range timeout, in milliseconds
                                               3, // large error range, in inches
                                               500, // large error range timeout, in milliseconds
                                               0 // maximum acceleration (slew)
@@ -111,39 +108,6 @@ bool hasSecond = false;
 
 std::string stack[2] = {"", ""};
 
-void initialize() {
-    pros::lcd::initialize();
-    pros::lcd::print(0, "Auton: %d", autonState);
-    chassis.calibrate();
-    flipper.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-    pros::Task auton_switch([&](){
-        while(true)
-        {
-            if(limit_switch.get_value() == 1 && buttonUnpressed)
-            {
-                autonState++;
-                if(autonState == 6) autonState = 0;
-                pros::lcd::print(0, "Auton: %d", autonState);
-                buttonUnpressed = false;
-            }
-            if(limit_switch.get_value() != 1) buttonUnpressed = true;
-
-            // pros::delay(7);
-            controller.print(0, 0, "Angle: %.1f", imu.get_heading());
-            pros::delay(50);
-        }
-    });
-}
-
-// void disabled() {}
-
-void autonomous() {
-    chassis.setPose(0,0,0);
-    chassis.moveToPose(24, 48, 90, 10000, {.earlyExitRange=10});
-    chassis.moveToPose(0, 48, 90, 10000, {.forwards=false, .earlyExitRange=10});
-    chassis.moveToPose(0, 96, 0, 10000, {.forwards=false});
-}
-
 void doFlip(){
     isFlipping = true;
     if(((autonState == 0 || autonState == 1 || autonState == 2) && stack[0] == "Red") || ((autonState == 3 || autonState == 4 || autonState == 5) && stack[0] == "Blue")){
@@ -153,7 +117,7 @@ void doFlip(){
     }
     pros::delay(500);
     flipper.move_absolute(0, 55);
-    pros::delay(1000);
+    pros::delay(800);
     isFlipping = false;
 }
 
@@ -173,7 +137,7 @@ void raiseMacro(){
     }
     isFlipping = true;
     flipper.move_absolute(-1700, 200);
-    pros::delay(1000);
+    pros::delay(300);
     isFlipping = false;
     canRaise = true;
 }
@@ -207,6 +171,47 @@ void shaky(){
     flipper.move_absolute(0, 55);
     pros::delay(250);
     isFlipping = false;
+}
+
+void initialize() {
+    pros::lcd::initialize();
+    pros::lcd::print(0, "Auton: %d", autonState);
+    chassis.calibrate();
+    flipper.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    pros::Task auton_switch([&](){
+        while(true)
+        {
+            if(limit_switch.get_value() == 1 && buttonUnpressed)
+            {
+                autonState++;
+                if(autonState == 6) autonState = 0;
+                pros::lcd::print(0, "Auton: %d", autonState);
+                buttonUnpressed = false;
+            }
+            if(limit_switch.get_value() != 1) buttonUnpressed = true;
+
+            // pros::delay(7);
+            controller.print(0, 0, "Angle: %.1f", imu.get_heading());
+            pros::delay(50);
+        }
+    });
+}
+
+// void disabled() {}
+
+void autonomous() {
+    chassis.setPose(-55.082,-31.516,90);
+    chassis.moveToPose(-22.985, -48.941, 150, 5000, {.lead=0.2, .maxSpeed=90    , .minSpeed=80,  .earlyExitRange=100});
+    chassis.moveToPose(-9.883, -47.237, 90, 5000, {.lead=0.2, .maxSpeed=90  , .minSpeed=80,  .earlyExitRange=100});
+    chassis.moveToPose(-23.771, -47.106, 90, 5000, {.forwards=false, .lead=0.2, .maxSpeed=90 , .minSpeed=80,  .earlyExitRange=100});
+    chassis.moveToPose(-23.64, -32.826, 180, 5000, {.forwards=false, .lead=0.2, .maxSpeed=90 , .minSpeed=80,  .earlyExitRange=100});
+    chassis.moveToPose(-51.938, 5.036, 320, 5000, {.lead=0.2, .maxSpeed=90  , .minSpeed=80,  .earlyExitRange=100});
+    chassis.moveToPose(-58.882, -0.073, 180, 5000, {.lead=0.2, .maxSpeed=90 , .minSpeed=80,  .earlyExitRange=100});
+    chassis.moveToPose(-63.205, -0.073, 90, 5000, {.lead=0.2, .maxSpeed=90  , .minSpeed=80});
+    chassis.moveToPose(-23.247, 47.353, 70, 5000, {.lead=0.2, .maxSpeed=90  , .minSpeed=80,  .earlyExitRange=100});
+    chassis.moveToPose(-7.001, 50.759, 90, 5000, {.lead=0.2, .maxSpeed=90   , .minSpeed=80,  .earlyExitRange=100});
+    chassis.moveToPose(-23.771, 32.941, 0, 5000, {.lead=0.2, .maxSpeed=90   , .minSpeed=80,  .earlyExitRange=100});
+    chassis.moveToPose(-17.22, 14.6, 320, 5000, {.lead=0.2, .maxSpeed=90    , .minSpeed=80,  .earlyExitRange=100});
 }
 
 void update_stack(){
@@ -267,7 +272,7 @@ void opcontrol() {
         if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && flipper.get_position() > -50 && (!(stack[0] != "" && stack[1] != "") || controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y))){
             intake.move_velocity(-600);
         } else if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
-            intake.move_velocity(400);
+            intake.move_velocity(550);
         }
         else {
             intake.move_velocity(0);
