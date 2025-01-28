@@ -27,9 +27,9 @@ bool canRaise = true;
 bool canMogo = true;
 bool canDoinker = true;
 
-pros::MotorGroup left_motor_group({20, -18, -17}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::rotations);
+pros::MotorGroup left_motor_group({20, -18, -17}, pros::v5::MotorGears::blue);
 
-pros::MotorGroup right_motor_group({-19, 16, 8}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::rotations);
+pros::MotorGroup right_motor_group({-19, 16, 8}, pros::v5::MotorGears::blue);
 
 lemlib::Drivetrain drivetrain(&left_motor_group, // left motor group
                               &right_motor_group, // right motor group
@@ -59,7 +59,7 @@ pros::Imu imu(1);
 
 pros::Rotation rotation(-11);
 
-lemlib::TrackingWheel horizontal_tracking_wheel(&rotation, lemlib::Omniwheel::NEW_2, -0.875);
+lemlib::TrackingWheel horizontal_tracking_wheel(&rotation, lemlib::Omniwheel::NEW_2, 0.875);
 
 lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel 1, set to null
                             nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
@@ -71,7 +71,7 @@ lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel 1, set to null
 // lateral PID controller
 lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              15, // derivative gain (kD)
+                                              20, // derivative gain (kD)
                                               3, // anti windup
                                               1, // small error range, in inches
                                               30, // small error range timeout, in milliseconds
@@ -110,13 +110,14 @@ std::string stack[2] = {"", ""};
 
 void doFlip(){
     isFlipping = true;
-    if(((autonState == 0 || autonState == 1 || autonState == 2) && stack[0] == "Red") || ((autonState == 3 || autonState == 4 || autonState == 5) && stack[0] == "Blue")){
-        flipper.move_absolute(-700, 150);
+    if(((autonState == 0 || autonState == 1 || autonState == 2) && stack[0] == "Red") 
+    || ((autonState == 3 || autonState == 4 || autonState == 5) && stack[0] == "Blue")){
+        flipper.move_absolute(-750, 150);
     } else {
         flipper.move_absolute(-1060, 200);
     }
-    pros::delay(500);
-    flipper.move_absolute(0, 55);
+    pros::delay(600);
+    flipper.move_absolute(0, 100);
     pros::delay(800);
     isFlipping = false;
 }
@@ -125,7 +126,7 @@ void toggleArm(){
     canRaise = false;
     arm.set_value(!isRaised);
     isRaised = !isRaised;
-    pros::delay(500);
+    pros::delay(1000);
     canRaise = true;
 }
 
@@ -137,7 +138,7 @@ void raiseMacro(){
     }
     isFlipping = true;
     flipper.move_absolute(-1700, 200);
-    pros::delay(300);
+    pros::delay(1000);
     isFlipping = false;
     canRaise = true;
 }
@@ -160,7 +161,7 @@ void toggleDoinker(){
     canDoinker = false;
     doinker.set_value(!doinkerOn);
     doinkerOn = !doinkerOn;
-    pros::delay(500);
+    pros::delay(1000);
     canDoinker = true;
 }
 
@@ -192,6 +193,7 @@ void initialize() {
 
             // pros::delay(7);
             controller.print(0, 0, "Angle: %.1f", imu.get_heading());
+            std::cout << "X: " << chassis.getPose().x << " Y: " << chassis.getPose().y << " Theta: " << chassis.getPose().theta << std::endl;
             pros::delay(50);
         }
     });
@@ -199,19 +201,24 @@ void initialize() {
 
 // void disabled() {}
 
+ASSET(chunky_txt)
+
 void autonomous() {
-    chassis.setPose(-55.082,-31.516,90);
-    chassis.moveToPose(-22.985, -48.941, 150, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
-    chassis.moveToPose(-9.883, -47.237, 90, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
-    chassis.moveToPose(-23.771, -47.106, 90, 3000, {.forwards=false, .lead=0.2, .maxSpeed=90 , .minSpeed=80,  .earlyExitRange=10});
-    chassis.moveToPose(-23.64, -32.826, 180, 3000, {.forwards=false, .lead=0.2, .maxSpeed=90 , .minSpeed=80,  .earlyExitRange=10});
-    chassis.moveToPose(-51.938, 5.036, 320, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
-    chassis.moveToPose(-58.882, -0.073, 180, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
-    chassis.moveToPose(-63.205, -0.073, 90, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80});
-    chassis.moveToPose(-23.247, 47.353, 70, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
-    chassis.moveToPose(-7.001, 50.759, 90, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
-    chassis.moveToPose(-23.771, 32.941, 0, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
-    chassis.moveToPose(-17.22, 14.6, 320, 3000, {.lead=0.2, .maxSpeed=90, .minSpeed=80,  .earlyExitRange=10});
+    chassis.setPose(0,0,0);
+    chassis.moveToPose(0,24,0,10000);
+    // chassis.moveToPoint(0, 0, 5000);
+    // chassis.moveToPoint(17.424, 32.098, 5000);
+    // chassis.moveToPoint(15.721, 45.199, 5000);
+    // chassis.moveToPoint(15.59, 31.312, 5000);
+    // chassis.moveToPoint(1.31, 31.443, 5000);
+    // chassis.moveToPoint(-36.552, 3.144, 5000);
+    // chassis.moveToPoint(-31.443, -3.799, 5000);
+    // chassis.moveToPoint(-31.443, -8.123, 5000);
+    // chassis.moveToPoint(-78.869, 31.836, 5000);
+    // chassis.moveToPoint(-82.275, 48.081, 5000);
+    // chassis.moveToPoint(-64.457, 31.312, 5000);
+    // chassis.moveToPoint(-46.116, 37.862, 5000);
+
 }
 
 void update_stack(){
