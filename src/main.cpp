@@ -204,20 +204,18 @@ void initialize() {
 ASSET(chunky_txt)
 
 void autonomous() {
-    chassis.setPose(0,0,0);
-    chassis.moveToPose(0,24,0,10000);
-    // chassis.moveToPoint(0, 0, 5000);
-    // chassis.moveToPoint(17.424, 32.098, 5000);
-    // chassis.moveToPoint(15.721, 45.199, 5000);
-    // chassis.moveToPoint(15.59, 31.312, 5000);
-    // chassis.moveToPoint(1.31, 31.443, 5000);
-    // chassis.moveToPoint(-36.552, 3.144, 5000);
-    // chassis.moveToPoint(-31.443, -3.799, 5000);
-    // chassis.moveToPoint(-31.443, -8.123, 5000);
-    // chassis.moveToPoint(-78.869, 31.836, 5000);
-    // chassis.moveToPoint(-82.275, 48.081, 5000);
-    // chassis.moveToPoint(-64.457, 31.312, 5000);
-    // chassis.moveToPoint(-46.116, 37.862, 5000);
+     chassis.setPose(-55.082,-31.516,90);
+    chassis.moveToPose(-22.985, -48.941, 150, 3000, {.minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-9.883, -47.237, 90, 3000, {.minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-23.771, -47.106, 90, 3000, {.forwards=false, .minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-23.64, -32.826, 180, 3000, {.forwards=false, .minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-51.938, 5.036, 320, 3000, {.minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-58.882, -0.073, 180, 3000, {.minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-63.205, -0.073, 90, 3000, {.minSpeed=80});
+    chassis.moveToPose(-23.247, 47.353, 70, 3000, {.minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-7.001, 50.759, 90, 3000, {.minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-23.771, 32.941, 0, 3000, {.minSpeed=80,  .earlyExitRange=10});
+    chassis.moveToPose(-17.22, 14.6, 320, 3000, {.minSpeed=80,  .earlyExitRange=10});
 
 }
 
